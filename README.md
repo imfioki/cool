@@ -8,7 +8,7 @@ As part of some training development, I came up with the idea for a DC Recovery 
 The project consists of:
 
 1) BrokenDC.json
-  1a) This is the CF templater
+  1a) This is the CF template
 2) Encoder.ps1
   2a) I used this small script to encode userdata during the building phase of the project, likely not needed anymore.
 3) Instance1_Builder.ps1
