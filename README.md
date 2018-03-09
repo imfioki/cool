@@ -19,9 +19,6 @@ The project consists of:
 This lab provided an environment for trainees to learn how to troubleshoot a broken domain, where the end solution is seizing and transferring FSMO roles.
 
 ****
-
-
-****
 ./twitterDataMiner
 ****
 This was part of my onboarding for the Big Data profile, where the final project was to scrap data from twitter and gather some basic statistics about the data, including:
@@ -44,7 +41,6 @@ The project consists of:
   2b) DataPipeline template is not included, but you can run manually.
   
   <The API keys for twitter are dead and can't be used>
-****
 
 ****
 ./whitePaperArchitecture
@@ -59,4 +55,3 @@ As part of my ownboarding to the Big Data profile at AWS, I wrote up a simple so
 5) Athena
 
 An explanation of the purpose of each component is contained within the solution's index.
-****
