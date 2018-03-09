@@ -1,0 +1,71 @@
+#top 10 popular users
+select tweet_data.user_followers_count,tweet_data.screen_name from hour_stats5
+sort by user_followers_count desc
+limit 10;
+
+#Top 10 languages
+select
+  tweet_data.user_lang,
+  count (tweet_data.user_lang) AS lang
+FROM
+  hour_stats5
+GROUP BY
+  tweet_data.user_lang
+  ORDER BY lang desc limit 10;
+
+#top 10 hashtags
+select
+  a.conver, count(*) AS lang
+from
+  (select explode(hashtags) as conver from hour_stats5) as a
+WHERE a.conver != "None"
+GROUP BY
+  a.conver
+ORDER BY
+  lang desc limit 10;
+
+#create table
+  CREATE EXTERNAL TABLE IF NOT EXISTS hour_stats(
+
+  tweet_data struct<user_lang:STRING,
+              screen_name:STRING,
+              user_location:STRING,
+              user_friends_count:INT,
+              user_place:STRING,
+              user_statuses_count:INT,
+              user_followers_count:INT
+             >,
+            hashtags array<STRING>,
+            sentiment STRING
+
+  )
+  ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+  WITH SERDEPROPERTIES (
+    'serialization.format' = '1'
+  ) LOCATION 's3://stopdeleting/2017/12/15/19/'
+  TBLPROPERTIES ('has_encrypted_data'='false');
+
+
+#download hive query if need be
+aws s3 cp s3://stopdeleting/create_tweet_data_table.sql /
+
+#get values for s3 path
+year=`date +"%Y"`
+month=`date +"%m"`
+day=`date +"%d"`
+hour=`date +"%H"`
+string="$year/$month/$day/$hour/"
+
+#replace string in hive query file
+line_old='[0-9][0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9]/[0-9][0-9]/'
+line_new=$string
+sed -i "s%$line_old%$line_new%g" query.sql
+
+#run hive query file
+create_tweet_data_table.sql
+
+#spark
+pyspark
+spark.sql("select tweet_data.user_followers_count,tweet_data.screen_name from hour_stats order by user_followers_count desc limit 10")
+spark.sql("select tweet_data.user_lang, count (tweet_data.user_lang) AS lang FROM hour_stats GROUP BY tweet_data.user_lang ORDER BY lang desc limit 10")
+spark.sql("select a.conver, count(*) AS lang from (select explode(hashtags) as conver from hour_stats) as a WHERE a.conver != 'None' GROUP BY a.conver ORDER BY lang desc limit 10")

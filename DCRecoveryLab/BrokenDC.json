@@ -1,0 +1,197 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+
+	"Description": "Windows",
+
+	"Parameters": {
+		"InstanceType": {
+			"Type": "String",
+			"Default": "m1.large",
+			"Description": "EC2 instance type"
+		},
+		"KeyName": {
+			"Description": "Name of an existing EC2 KeyPair to enable SSH access to the web server",
+			"Type": "String",
+			"MinLength": "1",
+			"MaxLength": "64",
+			"AllowedPattern": "[-_ a-zA-Z0-9]*",
+			"ConstraintDescription": "can contain only alphanumeric characters, spaces, dashes and underscores."
+		}
+	},
+
+	"Mappings": {
+		"AWSInstanceType2Arch": {
+			"t2.large": {
+				"Arch": "64"
+			},
+			"m1.small": {
+				"Arch": "64"
+			},
+			"m1.large": {
+				"Arch": "64"
+			},
+			"m1.xlarge": {
+				"Arch": "64"
+			},
+			"m2.xlarge": {
+				"Arch": "64"
+			},
+			"m2.2xlarge": {
+				"Arch": "64"
+			},
+			"m2.4xlarge": {
+				"Arch": "64"
+			},
+			"c1.medium": {
+				"Arch": "64"
+			},
+			"c1.xlarge": {
+				"Arch": "64"
+			},
+			"cc1.4xlarge": {
+				"Arch": "64"
+			}
+		},
+		"AWSRegionArch2AMI": {
+
+			"us-west-2": {
+				"32": "ami-36c64a06",
+				"64": "ami-3189ec51"
+			}
+
+		}
+	},
+
+
+  "Resources": {
+
+    "RootRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [ "ec2.amazonaws.com" ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "RootInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "RootRole"
+          }
+        ]
+      }
+    },
+
+    "Ec2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegionArch2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            {
+              "Fn::FindInMap": [
+                "AWSInstanceType2Arch",
+                {
+                  "Ref": "InstanceType"
+                },
+                "Arch"
+              ]
+            }
+          ]
+        },
+        "IamInstanceProfile": {
+          "Ref": "RootInstanceProfile"
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "Ec2SecurityGroup"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "<powershell>\n",
+                "Invoke-WebRequest -Uri https://s3.amazonaws.com/labsarecool/Instance1_Builder.ps1 -OutFile C:\\lab.ps1 \n",
+                "Set-ExecutionPolicy Bypass -force\n",
+                "c:\\lab.ps1\n",
+
+                "</powershell>"
+
+              ]
+            ]
+          }
+        }
+      }
+    },
+
+
+    "Ec2SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "RDPForCloudForm",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "3389",
+            "ToPort": "3389",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    }
+  },
+
+	"Outputs": {
+		"InstanceId": {
+			"Description": "InstanceId of the newly created EC2 instance",
+			"Value": {
+				"Ref": "Ec2Instance"
+			}
+		},
+		"AvailabilityZone": {
+			"Description": "The Availability Zone in which the newly created EC2 instance was launched",
+			"Value": {
+				"Fn::GetAtt": ["Ec2Instance", "AvailabilityZone"]
+			}
+		}
+	}
+}
